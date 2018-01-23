@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/python
 """Script to monitor and read CSV files containing timestamped records
 and post those records to consumers such as the BMON web-based sensor analysis
 package (see https://github.com/alanmitchell/bmon).
@@ -132,6 +132,7 @@ while True:
                         # get the Unix timestamp indicating when file was last modified,
                         # and don't process if this file was modified prior to last record
                         # stored.
+                        # TODO: double check that this will work across DST changes
                         mod_time = os.stat(fn).st_mtime
                         if mod_time <= min_ts:
                             continue
@@ -160,7 +161,7 @@ while True:
         pickle.dump(last_ts_map, open(last_ts_fn, 'wb'))
 
         if config.get('run_once', False):
-            print "Waiting before exit..."
+            print ("Waiting before exit...")
             time.sleep(config.get('run_once_wait_before_stop', 15))
             sys.exit(0)
 

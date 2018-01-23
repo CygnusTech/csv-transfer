@@ -82,12 +82,12 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 """
 import os, sqlite3
-from cPickle import loads, dumps
+from pickle import loads, dumps
 from time import sleep
 try:
-    from thread import get_ident
+    from threading import get_ident
 except ImportError:
-    from dummy_thread import get_ident
+    from _dummy_thread import get_ident
 
 
 class SqliteReliableQueue(object):
@@ -173,7 +173,7 @@ class SqliteReliableQueue(object):
     def append(self, obj):
         """Adds an item to the queue.
         """
-        obj_buffer = buffer(dumps(obj, 2))
+        obj_buffer = dumps(obj, 2)
         with self._get_conn() as conn:
             conn.execute(self._append, (obj_buffer,))
             # the 'with' statement commits the insert.
@@ -189,10 +189,12 @@ class SqliteReliableQueue(object):
                 # need to make sure another thread does not pop the same item.
                 conn.execute(self._write_lock)
                 cursor = conn.execute(self._popleft_get)
-                try:
-                    id, obj_buffer = cursor.next()
+                row = cursor.fetchone()
+                if row is not None:
+                    id = row[0]
+                    obj_buffer = row[1]
                     keep_pooling = False
-                except StopIteration:
+                else:
                     conn.commit() # unlock the database
                     if not sleep_wait:
                         keep_pooling = False
@@ -203,7 +205,7 @@ class SqliteReliableQueue(object):
             if id:
                 conn.execute(self._popleft_del, (id,))
                 conn.execute(self._processing_append, (id, obj_buffer))
-                return id, loads(str(obj_buffer))
+                return id, loads(obj_buffer)
         return None, None
 
     def peek(self):

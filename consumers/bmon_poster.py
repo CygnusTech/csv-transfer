@@ -2,7 +2,7 @@
 application.  See: https://github.com/alanmitchell/bmon
 '''
 import os
-import httpPoster2
+from . import httpPoster2
 
 # The directory path to this file
 THIS_FOLDER = os.path.dirname(__file__)
