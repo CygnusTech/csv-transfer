@@ -30,7 +30,7 @@ import math
 import string
 import pytz
 from dateutil import parser
-import reader_util
+from . import reader_util
 
 # the error logger to use for this module
 logger = logging.getLogger(__name__)

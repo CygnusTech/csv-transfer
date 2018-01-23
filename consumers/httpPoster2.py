@@ -87,7 +87,7 @@ TO DO:
 import time, sys
 import threading, json, logging
 import requests
-import sqlite_queue
+from . import sqlite_queue
 
 # Disable warning messages that result from having to use Python 2.7.3 instead of
 # 2.7.9 and from having to disable SSL verification due to problems with Python 2.7.3
