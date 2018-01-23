@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def generic_reader(filename, chunk_size=1, ts_field=None, ts_tz='UTC',
                  field_names=[], header_rows=1, name_row=1,
-                 field_map={}, exclude_fields=[],
+                 field_map={}, exclude_fields=[], include_only_fields=[],
                  **csv_params):
     """This generator function is used to read CSV files and return chunks of records
     from those files. A chunk of records is a list of dictionaries, each dictionary being
@@ -68,6 +68,11 @@ def generic_reader(filename, chunk_size=1, ts_field=None, ts_tz='UTC',
     exclude_fields:  A list of field names to exclude from the final records returned.
         These field names must be written in their final form, i.e. as one of the
         'field_names' items, or after translation by the 'field_map' parameter.
+    include_only_fields: A list of field names for the final records returned.  Default is
+        Empty, which causes the parameter to be ignored.  Otherwise, any field name 
+        encountered that is not in this list is not included in the returned records.
+        These field names must be written in their final form, i.e. as one of the 
+        'field_names' items, or after translation by the 'field_map' parameter.
     **csv_params:  Any other keyword arguments found are passed along to the csv.Reader
         initialization function and can be used to correctly specify delimiters and
         quoting formats found in the CSV file.
@@ -120,6 +125,14 @@ def generic_reader(filename, chunk_size=1, ts_field=None, ts_tz='UTC',
                 for fld in exclude_fields:
                     rec.pop(fld, None)
 
+                # remove fields not explicitly included
+                if len(include_only_fields) > 0:
+                    newrec = dict(rec)
+                    for fld in rec:
+                        if fld not in include_only_fields and fld != 'ts':
+                            newrec.pop(fld, None)
+                    rec = newrec
+
                 # make timestamp a Unix epoch timestamp
                 try:
                     # assume field is already Unix epoch timestamp
@@ -127,7 +140,9 @@ def generic_reader(filename, chunk_size=1, ts_field=None, ts_tz='UTC',
                 except:
                     # treat this as a string date
                     dt = parser.parse(rec['ts'])
-                    dt = tstz.localize(dt)
+                    # localize the time to the configured timezone if the parsed time doesn't have a timezone
+                    if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
+                        dt = tstz.localize(dt)
                     rec['ts'] = calendar.timegm(dt.utctimetuple())
 
                 if math.isnan(rec['ts']):
