@@ -7,6 +7,7 @@ import math
 import pytz
 from dateutil import parser
 import reader_util
+import time
 
 # the error logger to use for this module
 logger = logging.getLogger(__name__)
@@ -137,6 +138,11 @@ def generic_reader(filename, chunk_size=1, ts_field=None, ts_tz='UTC',
                 try:
                     # assume field is already Unix epoch timestamp
                     rec['ts'] = float(rec['ts'])
+                    
+                    # guess if the unix timestamp is in seconds or milliseconds;
+                    # if it is milliseconds then convert to seconds.
+                    if rec['ts'] > time.mktime(time.gmtime()):
+                        rec['ts'] /= 1000.0
                 except:
                     # treat this as a string date
                     dt = parser.parse(rec['ts'])
